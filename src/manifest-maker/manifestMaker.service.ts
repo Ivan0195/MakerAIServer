@@ -53,16 +53,18 @@ export class ManifestMakerService {
       // : `[INST]return list of instructions[/INST]${subtitles}`,
       //);
 
-      //  withClips
-      //  ? `[INST]group and summarize text into list of steps of instruction with start time for each step[/INST]${subtitles}`
-      //      : `[INST]return list of instructions[/INST]${subtitles}`,
-//  );
-
-
-      withClips
-        ? `<s>[INST]return list of instructions with start time[/INST]${subtitles}</s>[INST]skip introduction and other unnecessary parts[/INST]`
-        : `[INST]return list of instructions[/INST]${subtitles}`,
-    );
+     withClips
+      ? (
+      withDescription
+      	? `<s>[INST]make manual from provided information ${subtitles}[/INST]</s>[INST]skip introduction and other unnecessary parts[/INST]`
+      	: `<s>[INST]generate manual: ${subtitles}[/INST]</s>[INST]skip introduction and other unnecessary parts[/INST]`
+      )
+      : (
+      withDescription
+        ? `[INST]generate manual from provided information: ${subtitles}[/INST]`
+        : `[INST]generate manual from provided information: ${subtitles}[/INST]`
+        ),
+  );
 
 
     //  withClips
@@ -90,6 +92,8 @@ export class ManifestMakerService {
     }
     let decodedAnswer = await context.decode(answer);
     if (withClips) {
+      decodedAnswer = decodedAnswer.replaceAll("\"start\": 0}", "\"start\": 00}")
+      decodedAnswer = decodedAnswer.replaceAll("\"start\": 0", "\"start\": ")
       const genData = JSON.parse(decodedAnswer);
       const newData = genData.steps.map((step, index) => {
         return {
@@ -172,12 +176,12 @@ export class ManifestMakerService {
     });
     const context = new LlamaContext({
       model: model,
-      contextSize: 8192,
-      batchSize: 16384,
+      contextSize: 20000,
+      batchSize: 30000,
     });
 
     const vectors = context.encode(
-      `<s>[INST]You are AI assistant, your name is Taqi. Answer questions. Use this helpful information to answer questions.  Finish your answer with <end> tag.[/INST] ${extraInfo}</s>[INST]${prompt}[/INST]`,
+      `[INST]You are AI assistant, your name is Taqi. Answer questions. Use this helpful information ${extraInfo} to answer question ${prompt}. Finish your answer with <end> tag.[/INST]`,
     );
 
     if (vectors.length > 20000) {
@@ -226,7 +230,7 @@ export class ManifestMakerService {
     ].join();
 
     const vectors = context.encode(
-      `<s>[INST]You are AI assistant, your name is Taqi. Answer questions. Use this helpful information to answer questions.  Finish your answer with <end> tag.[/INST] ${usefulInfo}</s>[INST]${prompt}[/INST]`,
+      `[INST]You are AI assistant, your name is Taqi. Answer questions. Use this helpful information ${usefulInfo} to answer question ${prompt}. Finish your answer with <end> tag.[/INST]`,
     );
 
     if (vectors.length) {
@@ -248,3 +252,4 @@ export class ManifestMakerService {
     return decodedAnswer;
   }
 }
+
